@@ -10,19 +10,20 @@ object TwitterHashtag {
 
   case class TweetContent(content:String)
 
-  val spark = SparkSession
-    .builder
-    .appName("Twitter Hashtag")
-    .master("local[*]")
-    .getOrCreate()
-
-  import spark.implicits._
-  val df = spark.read
-    .option("header", "true")
-    .option("inferSchema", "true")
-    .csv("data/AllTweets.csv")
-
   def main(args: Array[String]){
+
+    val spark = SparkSession
+      .builder
+      .appName("Twitter Hashtag")
+      .master("local[*]")
+      .getOrCreate()
+
+    import spark.implicits._
+    val df = spark.read
+      .option("header", "true")
+      .option("inferSchema", "true")
+      .csv("data/AllTweets.csv")
+
     val tweetContentDf = df.select("text").withColumnRenamed("text", "content").as[TweetContent]
 
     val contentDs = tweetContentDf.flatMap(r => if (r.content != null) r.content.split(" ") else Array(" "))
