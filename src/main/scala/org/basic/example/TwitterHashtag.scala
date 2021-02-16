@@ -1,7 +1,7 @@
 package org.basic.example
 
 import org.apache.log4j._
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions.{col, desc}
 
 object TwitterHashtag {
@@ -10,19 +10,33 @@ object TwitterHashtag {
 
   case class TweetContent(content:String)
 
+  val spark = SparkSession
+    .builder
+    .appName("Twitter Hashtag")
+    .master("local[*]")
+    .getOrCreate()
+
+  import spark.implicits._
+  val df = spark.read
+    .option("header", "true")
+    .option("inferSchema", "true")
+    .csv("data/AllTweets.csv")
+
   def main(args: Array[String]){
 
-    val spark = SparkSession
-      .builder
-      .appName("Twitter Hashtag")
-      .master("local[*]")
-      .getOrCreate()
+    val resultDs = countPopularHashtags(df)
 
-    import spark.implicits._
-    val df = spark.read
-      .option("header", "true")
-      .option("inferSchema", "true")
-      .csv("data/AllTweets.csv")
+    println("Top 20 popular hashtags of the AllTweets Dataset")
+
+    resultDs.show(truncate = false)
+
+//    resultDs
+//      .write
+//      .option("header", "true")
+//      .save("data/hashtags.csv")
+  }
+
+  def countPopularHashtags(df:DataFrame): DataFrame ={
 
     val tweetContentDf = df.select("text").withColumnRenamed("text", "content").as[TweetContent]
 
@@ -32,15 +46,7 @@ object TwitterHashtag {
 
     val resultDs = hashtagDs.groupBy("value").count().orderBy(desc("count"))
 
-    println("Top 20 popular hashtags of the AllTweets Dataset")
-
-    resultDs.show(truncate = false)
-
     resultDs
-      .write
-      .option("header", "true")
-      .save("data/hashtags.csv")
   }
-
 
 }
